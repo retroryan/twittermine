@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<script src="http://code.jquery.com/jquery-1.7.2.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+
+    $(function () {
+
+        loadTweets();
+
+        $("#submitStatus").bind('click', function () {
+            saveStatus();
+        });
+
+    });
+
+
+    function loadTweets() {
+        $.post("../listTweets", {},
+                function (data) {
+                    data.forEach(function (tweet) {
+                        $("#tweets").append("<li>" + tweet.status + " =>  " + tweet.user + "</li>")
+                    })
+                }).error(function () {
+                    console.log("Error loading tweets");
+                });
+    }
+
+
+    function saveStatus() {
+        var twitterId = $("#twitterIdInput").val();
+        var status = $("#statusInput").val();
+        var user = $("#userInput").val();
+
+        if (status === "" || user === "") {
+            alert("Please enter a status and user.");
+            return;
+        }
+
+        var statusJson = JSON.stringify({twitterId:twitterId, status: status, user: user});
+        console.log("sending " + statusJson);
+
+        jqxhr = $.ajax({
+            url: "../create",
+            data: statusJson,
+            contentType: "application/json",
+            type: "POST",
+            dataType: "json"
+        });
+
+        jqxhr.done(
+                function (data) {
+                    console.log("saved tweet:" + data)
+                    $("#tweets").empty()
+                    loadTweets()
+                });
+
+        //even thought the create tweet is working, it returns an error message
+        jqxhr.fail(
+                function (data, textStatus, errorThrown) {
+                    console.log("error:" + data)
+                });
+    }
+
+</script>
+
+<body>
+<h1>Status Manager</h1>
+
+
+Tweet ID: <input type="text" id="twitterIdInput" value="0"/><br/>
+Status: <input type="text" id="statusInput" value="Test Status Message"/><br/>
+User: <input type="text" id="userInput" value="@fake_user"/><br/>
+
+<input type="submit" id="submitStatus" value="Save"/>
+
+<ul id="tweets">
+
+</ul>
+
+
+</body>
+</html>
