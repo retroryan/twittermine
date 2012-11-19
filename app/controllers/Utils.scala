@@ -79,7 +79,7 @@ object Utils {
 
     import java.io._
 
-    val tweetStrings: List[String] = tweetList.map {
+    val tweetStrings = tweetList.map {
       tweet =>
         Json.toJson(Tweet.tweetToMap(tweet)).toString()
     }

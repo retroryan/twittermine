@@ -5,14 +5,12 @@ import views._
 import models.{WordCount, Tweet}
 
 import play.api.mvc._
-import play.api.libs.concurrent.Promise
 import play.api.Logger
 import play.api.libs.json.Json._
 import play.api.libs.json._
 import play.api.libs.oauth.{OAuthCalculator, RequestToken}
 import play.api.libs.ws.{WS, ResponseHeaders}
 import play.api.libs.iteratee.{Enumerator, Enumeratee, Iteratee}
-import play.api.libs.ws.WS.WSRequestHolder
 import play.api.libs.Comet
 
 object TwitterController extends Controller {
@@ -68,7 +66,7 @@ object TwitterController extends Controller {
   def listWordCount = Action {
     implicit request =>
 
-      //todo the minimum count should be a parameter passed in from the client
+    //todo the minimum count should be a parameter passed in from the client
       val wordCountList = WordCount.findAll().filter(_.getCount > 1).sortWith(_.getCount > _.getCount)
 
       // this uses the implicit converter in Tweet
@@ -86,7 +84,7 @@ object TwitterController extends Controller {
   def loadtimeline = Action {
     implicit request =>
 
-      val promiseOfTimeline: Promise[Unit] = TwitterUtils.readTwitterTimeline {
+      val promiseOfTimeline = TwitterUtils.readTwitterTimeline {
         processTimeline(_)
       }
 
@@ -104,7 +102,7 @@ object TwitterController extends Controller {
    *
    * @param timelineJson
    */
-  def processTimeline(timelineJson: JsValue):Unit = {
+  def processTimeline(timelineJson: JsValue): Unit = {
 
     //  The following gets the text of the tweets, but text is also used
     //  at multiple levels, so this picks up garbage
@@ -118,7 +116,7 @@ object TwitterController extends Controller {
 
     //we cast this to a list and get the size
     //we then iterate through the list and parse each tweet
-    val tweetList: List[JsValue] = timelineJson.as[List[JsValue]]
+    val tweetList = timelineJson.as[List[JsValue]]
     (0 to tweetList.size - 1).map {
       indx =>
         parseAndSaveTweet(timelineJson.apply(indx), "ryan", true)
@@ -137,7 +135,7 @@ object TwitterController extends Controller {
    * @param owner
    * @param saveTweetInDb
    */
-  def parseAndSaveTweet(json: JsValue, owner:String, saveTweetInDb:Boolean):Unit = {
+  def parseAndSaveTweet(json: JsValue, owner: String, saveTweetInDb: Boolean): Unit = {
     val tweet = Tweet.createTweetFromTwitterJson(json, owner)
 
     //first see if this tweet is already saved in the db.
@@ -160,7 +158,7 @@ object TwitterController extends Controller {
     Logger.info("connecting to " + requestUrl)
 
     WS.url(requestUrl)
-       .sign(OAuthCalculator(TwitterUtils.KEY, token))
+      .sign(OAuthCalculator(TwitterUtils.KEY, token))
       .get(consumer)
   }
 
@@ -185,20 +183,10 @@ object TwitterController extends Controller {
 
       val jsonTweet = Enumeratee.map[Array[Byte]] {
         message =>
-        //println("js: " + new String(message))
           val json = Json.parse(new String(message))
           parseAndSaveTweet(json, owner = "", saveTweetInDb = true)
           json
       }
-
-      /* val streamEnum = rawTweet &> jsonTweet
-
-      val parseAndSaveTweetIteratee = Iteratee.foreach[JsValue] {
-        json =>
-          parseAndSaveTweet(json, true)
-      }
-
-      streamEnum(parseAndSaveTweetIteratee)*/
 
       Ok.stream(rawTweet &> jsonTweet &> Comet(callback = "parent.newTweet"))
   }

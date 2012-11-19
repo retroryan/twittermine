@@ -34,7 +34,6 @@ class Tweet(@ObjectId @Id id: String,
   def getUser = user
   def getOwner = owner
 
-
 }
 
 object Tweet {
