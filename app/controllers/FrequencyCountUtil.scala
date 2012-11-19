@@ -14,23 +14,24 @@ object FrequencyCountUtil {
    *
    * @param line
    */
-  def frequencyCountStr(line: String) {
+  def frequencyCountStr(line: String):Unit = {
 
     // ideally we want to split on sentences and word boundaries
     // valwordsArray=text.split("[ !,.]+")
 
     //first group the like words in map, forcing everything to lower case
     //then create a map of the word counts by taking the length of the array words
-    val frequencyCountMap: Map[String, Int] = line.split("[ !,.]+").groupBy(word => word.toLowerCase).mapValues(_.length)
+    val frequencyCountMap = line.split("[ !,.]+").groupBy(word => word.toLowerCase).mapValues(_.length)
 
     //add or update word counts in the database
     //exclude single letter words and stop words.
-    frequencyCountMap.keys.foreach {
-      word =>
+
+    frequencyCountMap.foreach {
+      case (word, count) => {
         if ((word.length > 1) && (!Utils.stopWordExists(word))) {
-          val count = frequencyCountMap.get(word).get
           addFrequencyCountToDb(word, count)
         }
+      }
     }
   }
 
@@ -40,7 +41,7 @@ object FrequencyCountUtil {
    * @param word
    * @param count
    */
-  def addFrequencyCountToDb(word: String, count: Int) {
+  def addFrequencyCountToDb(word: String, count: Int):Unit = {
 
     WordCount.findWord(word) match {
       case Some(wc) => {

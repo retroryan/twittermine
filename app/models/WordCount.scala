@@ -25,11 +25,11 @@ class WordCount(@ObjectId @Id val id: String,
 object WordCount {
   private lazy val db = MongoDB.collection("wordCount", classOf[WordCount], classOf[String])
 
-  def create(wordCount: WordCount) {
+  def create(wordCount: WordCount):Unit = {
     db.save(wordCount)
   }
 
-  def update(wordCount: WordCount) {
+  def update(wordCount: WordCount):Unit = {
     db.updateById(wordCount.id, wordCount)
   }
 
