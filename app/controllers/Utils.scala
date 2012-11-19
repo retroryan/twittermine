@@ -5,6 +5,7 @@ import scala.Predef._
 import collection.mutable.ListBuffer
 import models.Tweet
 import play.api.libs.json.Json
+import collection.mutable
 
 
 object Utils {
@@ -27,7 +28,7 @@ object Utils {
    * @tparam A
    * @return
    */
-  def readOperation[A <: Closable](resource: A)(readOperation: A => Iterator[String]): ListBuffer[String] = {
+  def readListOperation[A <: Closable](resource: A)(readOperation: A => Iterator[String]): ListBuffer[String] = {
     try {
       val data = readOperation(resource)
       val buf = new ListBuffer[String]
@@ -57,7 +58,7 @@ object Utils {
   def loadStopWords() = {
 
     val fileSource = Source.fromFile("data/stopwords.csv")
-    readOperation(fileSource) {
+    readListOperation(fileSource) {
       file => {
         file.getLines().flatMap(_.split(","))
       }
@@ -89,8 +90,4 @@ object Utils {
       file.print(tweetStrings.mkString("[", ", ", "]"))
     })
   }
-
-
-
-
 }

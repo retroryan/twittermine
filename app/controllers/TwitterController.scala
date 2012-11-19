@@ -18,6 +18,7 @@ object TwitterController extends Controller {
 
   def index = Action {
     request =>
+
       Ok(html.index())
   }
 
@@ -104,6 +105,8 @@ object TwitterController extends Controller {
    */
   def processTimeline(timelineJson: JsValue): Unit = {
 
+    println("processing: " + timelineJson)
+
     //  The following gets the text of the tweets, but text is also used
     //  at multiple levels, so this picks up garbage
     //  I need a way to get text from just one level down?
@@ -117,7 +120,7 @@ object TwitterController extends Controller {
     //we cast this to a list and get the size
     //we then iterate through the list and parse each tweet
     val tweetList = timelineJson.as[List[JsValue]]
-    (0 to tweetList.size - 1).map {
+    (0 to tweetList.size - 1).foreach {
       indx =>
         parseAndSaveTweet(timelineJson.apply(indx), "ryan", true)
     }
