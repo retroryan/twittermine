@@ -13,6 +13,7 @@ import play.api.libs.oauth.{OAuthCalculator, RequestToken}
 import play.api.libs.ws.{WS, ResponseHeaders}
 import play.api.libs.iteratee.{Enumerator, Enumeratee, Iteratee}
 import play.api.libs.ws.WS.WSRequestHolder
+import play.api.libs.Comet
 
 object TwitterController extends Controller {
 
@@ -46,9 +47,10 @@ object TwitterController extends Controller {
    */
   def listTweets = Action {
     implicit request =>
-      val tweetList = Tweet.findAll()
 
-      //saveTweetsToFile(tweetList)
+      val tweetList = Tweet.findByOwner("ryan")
+
+      Utils.saveTweetsToFile(tweetList)
 
       // this uses the implicit converter in Tweet
       Ok(toJson(tweetList))
@@ -69,36 +71,10 @@ object TwitterController extends Controller {
       //todo the minimum count should be a parameter passed in from the client
       val wordCountList = WordCount.findAll().filter(_.getCount > 1).sortWith(_.getCount > _.getCount)
 
-      //saveTweetsToFile(tweetList)
-
       // this uses the implicit converter in Tweet
       Ok(toJson(wordCountList))
 
-    // instead of an implicit converter we could just do this
-    //and this also works with the java util array returned from the mongo db
-    // val json = Json.generate(tweetList)
-    // Ok(json).as("application/json")
   }
-
-
-  /**
-   * This is a one time use function to write a list of tweets to file for testing purposes
-   * @param tweetList
-   */
-  def saveTweetsToFile(tweetList: List[Tweet]) {
-
-    import java.io._
-
-    val tweetStrings: List[String] = tweetList.map {
-      tweet =>
-        Json.toJson(Tweet.tweetToMap(tweet)).toString()
-    }
-
-    Utils.printToFile(new File("data/testdata.json"))(file => {
-      file.print(tweetStrings.mkString("[", ", ", "]"))
-    })
-  }
-
 
   /**
    * Asynchronously connect to twitter and get the users timeline
@@ -107,7 +83,7 @@ object TwitterController extends Controller {
    *
    * @return
    */
-  def timeline = Action {
+  def loadtimeline = Action {
     implicit request =>
 
       val promiseOfTimeline: Promise[Unit] = TwitterUtils.readTwitterTimeline {
@@ -128,7 +104,7 @@ object TwitterController extends Controller {
    *
    * @param timelineJson
    */
-  def processTimeline(timelineJson: JsValue) {
+  def processTimeline(timelineJson: JsValue):Unit = {
 
     //  The following gets the text of the tweets, but text is also used
     //  at multiple levels, so this picks up garbage
@@ -145,7 +121,7 @@ object TwitterController extends Controller {
     val tweetList: List[JsValue] = timelineJson.as[List[JsValue]]
     (0 to tweetList.size - 1).map {
       indx =>
-        parseAndSaveTweet(timelineJson.apply(indx), true)
+        parseAndSaveTweet(timelineJson.apply(indx), "ryan", true)
     }
   }
 
@@ -158,10 +134,11 @@ object TwitterController extends Controller {
    * only the twitter id will be saved and the tweet will be set to an empty string
    *
    * @param json
+   * @param owner
    * @param saveTweetInDb
    */
-  def parseAndSaveTweet(json: JsValue, saveTweetInDb:Boolean) {
-    val tweet = Tweet.createTweetFromTwitterJson(json)
+  def parseAndSaveTweet(json: JsValue, owner:String, saveTweetInDb:Boolean):Unit = {
+    val tweet = Tweet.createTweetFromTwitterJson(json, owner)
 
     //first see if this tweet is already saved in the db.
     //if not save it to the db
@@ -179,11 +156,11 @@ object TwitterController extends Controller {
   def tweetsStream[A](token: RequestToken)(terms: String)(consumer: ResponseHeaders => Iteratee[Array[Byte], A]) = {
 
     var encodedTerms = java.net.URLEncoder.encode(terms, "UTF-8")
-    val requestUrl: String = "https://stream.twitter.com/1/statuses/filter.json?track=" + encodedTerms
+    val requestUrl = "https://stream.twitter.com/1/statuses/filter.json?track=" + encodedTerms
     Logger.info("connecting to " + requestUrl)
 
-    val wsRequest: WSRequestHolder = WS.url(requestUrl)
-    wsRequest.sign(OAuthCalculator(TwitterUtils.KEY, token))
+    WS.url(requestUrl)
+       .sign(OAuthCalculator(TwitterUtils.KEY, token))
       .get(consumer)
   }
 
@@ -198,12 +175,6 @@ object TwitterController extends Controller {
 
       Logger.info("starting stream processing")
 
-      val json = Enumeratee.map[Array[Byte]] {
-        message =>
-        //println("js: " + new String(message))
-          Json.parse(new String(message))
-      }
-
       val rawTweet = new Enumerator[Array[Byte]] {
         def apply[A](iteratee: Iteratee[Array[Byte], A]) = {
           tweetsStream(TwitterUtils.TOKEN)(keywords) {
@@ -212,16 +183,24 @@ object TwitterController extends Controller {
         }
       }
 
-      val streamEnum: Enumerator[JsValue] = rawTweet &> json
+      val jsonTweet = Enumeratee.map[Array[Byte]] {
+        message =>
+        //println("js: " + new String(message))
+          val json = Json.parse(new String(message))
+          parseAndSaveTweet(json, owner = "", saveTweetInDb = true)
+          json
+      }
+
+      /* val streamEnum = rawTweet &> jsonTweet
 
       val parseAndSaveTweetIteratee = Iteratee.foreach[JsValue] {
         json =>
           parseAndSaveTweet(json, true)
       }
 
-      val promiseOfEnums: Promise[Iteratee[JsValue, Unit]] = streamEnum(parseAndSaveTweetIteratee)
+      streamEnum(parseAndSaveTweetIteratee)*/
 
-      Ok("Started twitter stream processing")
+      Ok.stream(rawTweet &> jsonTweet &> Comet(callback = "parent.newTweet"))
   }
 
 }

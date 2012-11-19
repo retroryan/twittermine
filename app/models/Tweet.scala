@@ -23,7 +23,8 @@ import play.api.Play.current
 class Tweet(@ObjectId @Id id: String,
                  @BeanProperty @JsonProperty("twitterId") twitterId: String,
                  @BeanProperty @JsonProperty("status") status: String,
-                 @BeanProperty @JsonProperty("user") user: String) {
+                 @BeanProperty @JsonProperty("user") user: String,
+                 @BeanProperty @JsonProperty("owner") owner: String) {
   @ObjectId
   @Id
   def getId = id
@@ -31,6 +32,7 @@ class Tweet(@ObjectId @Id id: String,
   def getTwitterId = twitterId
   def getStatus = status
   def getUser = user
+  def getOwner = owner
 
 
 }
@@ -38,7 +40,7 @@ class Tweet(@ObjectId @Id id: String,
 object Tweet {
   private lazy val db = MongoDB.collection("statuses", classOf[Tweet], classOf[String])
 
-  def create(status: Tweet) {
+  def create(status: Tweet):Unit = {
     db.save(status)
   }
 
@@ -54,6 +56,17 @@ object Tweet {
     builder.result
   }
 
+  def findByOwner(owner: String) = {
+    val dbCursor = db.find().is("owner", owner)
+
+    val builder = immutable.List.newBuilder[Tweet]
+    while (dbCursor.hasNext) {
+      builder += dbCursor.next()
+    }
+
+    builder.result
+  }
+
   def findByTwitterId(twitterId: String) = {
     val dbCursor = db.find().is("twitterId", twitterId)
     if (dbCursor.hasNext)
@@ -65,17 +78,19 @@ object Tweet {
   def tweetToMap(tweet: Tweet) = (
     Map(
       "status" -> tweet.getStatus,
-      "user" -> tweet.getStatus,
-      "twitterId" -> tweet.getTwitterId
+      "user" -> tweet.getUser,
+      "twitterId" -> tweet.getTwitterId,
+      "owner" -> tweet.getOwner
     )
     )
 
-  def createTweetFromTwitterJson(json: JsValue) = {
+  def createTweetFromTwitterJson(json: JsValue, owner:String) = {
     new Tweet(
       null,
       (json \ "id_str").as[String],
       (json \ "text").as[String],
-      (json \ "user" \ "name").as[String]
+      (json \ "user" \ "name").as[String],
+      owner
     )
   }
 
@@ -92,7 +107,8 @@ object Tweet {
         null,
         (json \ "twitterId").as[String],
         (json \ "status").as[String],
-        (json \ "user").as[String]
+        (json \ "user").as[String],
+        ""
       )
     }
   }

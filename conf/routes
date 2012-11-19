@@ -7,8 +7,14 @@ GET     /                           controllers.TwitterController.index
 POST    /listTweets                 controllers.TwitterController.listTweets
 POST    /listWordCount              controllers.TwitterController.listWordCount
 POST    /create                     controllers.TwitterController.create
-GET    /timeline                    controllers.TwitterController.timeline
+GET     /loadtimeline                    controllers.TwitterController.loadtimeline
 GET     /tweets/:keywords           controllers.TwitterController.tweets(keywords:String)
+
+
+GET     /statusmanager               controllers.Assets.at(path="/public", file="statusmanager.html")
+GET     /streaming               controllers.Assets.at(path="/public", file="streaming.html")
+GET     /timeline               controllers.Assets.at(path="/public", file="timeline.html")
+GET     /wordfrequency               controllers.Assets.at(path="/public", file="wordfrequency.html")
 
 
 # Map static resources from the /public folder to the /assets URL path
