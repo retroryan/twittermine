@@ -17,7 +17,7 @@ object FrequencyCountUtil {
   def frequencyCountStr(line: String):Unit = {
 
     // ideally we want to split on sentences and word boundaries
-    // valwordsArray=text.split("[ !,.]+")
+    // text.split("[ !,.]+")
 
     //first group the like words in map, forcing everything to lower case
     //then create a map of the word counts by taking the length of the array words
@@ -52,7 +52,7 @@ object FrequencyCountUtil {
           wc.getCount + count
         )
         WordCount.update(wordCount)
-        Logger.info("update " + wordCount.getWord + " " + wordCount.getCount)
+       // Logger.info("updated " + wordCount.getWord + " " + wordCount.getCount)
       }
 
       case _ => {
@@ -63,7 +63,7 @@ object FrequencyCountUtil {
           count
         )
         WordCount.create(wordCount)
-        Logger.info("adding " + wordCount.getWord + " " + wordCount.getCount)
+       // Logger.info("adding " + wordCount.getWord + " " + wordCount.getCount)
       }
     }
 

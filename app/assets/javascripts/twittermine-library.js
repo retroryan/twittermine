@@ -9,20 +9,28 @@
 
 function startStream() {
     var keywords = $("#keywordsInput").val()
+    console.log(keywords.length)
 
     var iframe = window.document.createElement("iframe")
-    iframe.src = "../tweets/" + keywords
+
+    if (keywords.length > 0) {
+        iframe.src = "../tweets/" + keywords
+    }
+    else {
+        iframe.src = "../randomtweets"
+    }
     iframe.style.display = "none"
     window.document.body.appendChild(iframe)
 }
 
 var newTweet = function (tweet) {
-
-    var tweetsListSize = $("#tweetList").children("li").length
-    if (tweetsListSize > 10) {
-        $("#tweetList li:last").remove()
+    if (tweet.text != undefined) {
+        var tweetsListSize = $("#tweetList").children("li").length
+        if (tweetsListSize > 10) {
+            $("#tweetList li:last").remove()
+        }
+        $("#tweetList").prepend("<li><h4>" + tweet.user.name + " </h4><p>" + tweet.text + "</p></li>")
     }
-    $("#tweetList").prepend("<li><h4>" + tweet.user.name + " </h4><p>" + tweet.text + "</p></li>")
 }
 
 function loadTweets() {

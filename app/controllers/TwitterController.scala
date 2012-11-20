@@ -105,8 +105,6 @@ object TwitterController extends Controller {
    */
   def processTimeline(timelineJson: JsValue): Unit = {
 
-    println("processing: " + timelineJson)
-
     //  The following gets the text of the tweets, but text is also used
     //  at multiple levels, so this picks up garbage
     //  I need a way to get text from just one level down?
@@ -139,6 +137,7 @@ object TwitterController extends Controller {
    * @param saveTweetInDb
    */
   def parseAndSaveTweet(json: JsValue, owner: String, saveTweetInDb: Boolean): Unit = {
+
     val tweet = Tweet.createTweetFromTwitterJson(json, owner)
 
     //first see if this tweet is already saved in the db.
@@ -146,7 +145,7 @@ object TwitterController extends Controller {
     Tweet.findByTwitterId(tweet.getTwitterId) match {
       case Some(t) => Logger.debug("tweet already exists, not saving")
       case _ => {
-        Logger.info("Adding tweet " + tweet)
+        Logger.info("Adding tweet from " + tweet.getUser)
         Tweet.create(tweet)
         //add a count of the words in each tweet to the database
         FrequencyCountUtil.frequencyCountStr(tweet.getStatus)
@@ -154,12 +153,9 @@ object TwitterController extends Controller {
     }
   }
 
-  def tweetsStream[A](token: RequestToken)(terms: String)(consumer: ResponseHeaders => Iteratee[Array[Byte], A]) = {
+  def tweetsStream[A](token: RequestToken)(requestUrl: String)(consumer: ResponseHeaders => Iteratee[Array[Byte], A]) = {
 
-    var encodedTerms = java.net.URLEncoder.encode(terms, "UTF-8")
-    val requestUrl = "https://stream.twitter.com/1/statuses/filter.json?track=" + encodedTerms
     Logger.info("connecting to " + requestUrl)
-
     WS.url(requestUrl)
       .sign(OAuthCalculator(TwitterUtils.KEY, token))
       .get(consumer)
@@ -167,31 +163,64 @@ object TwitterController extends Controller {
 
 
   /**
-   * Stream tweets from the Twitter Streaming API
+   * Stream filtered tweets from the Twitter Streaming API
    * @param keywords Terms to track
    */
-  def tweets(keywords: String) = Action {
+  def filteredTweets(keywords: String) = Action {
 
     implicit request =>
 
-      Logger.info("starting stream processing")
+      Logger.info("starting filtered stream processing")
 
-      val rawTweet = new Enumerator[Array[Byte]] {
-        def apply[A](iteratee: Iteratee[Array[Byte], A]) = {
-          tweetsStream(TwitterUtils.TOKEN)(keywords) {
-            _ => iteratee
-          }
+      var encodedTerms = java.net.URLEncoder.encode(keywords, "UTF-8")
+      val requestUrl = "https://stream.twitter.com/1/statuses/filter.json?track=" + encodedTerms
+
+      createTwitterStream(requestUrl)
+  }
+
+  /**
+   * Stream random tweets from the Twitter Streaming API
+   */
+  def randomtweets = Action {
+
+    implicit request =>
+
+      Logger.info("starting random stream processing")
+      val requestUrl = "https://stream.twitter.com/1/statuses/sample.json"
+      createTwitterStream(requestUrl)
+  }
+
+  def createTwitterStream(requestUrl: String) = {
+    val rawTweet = new Enumerator[Array[Byte]] {
+      def apply[A](iteratee: Iteratee[Array[Byte], A]) = {
+        tweetsStream(TwitterUtils.TOKEN)(requestUrl) {
+          _ => iteratee
         }
       }
+    }
 
-      val jsonTweet = Enumeratee.map[Array[Byte]] {
-        message =>
-          val json = Json.parse(new String(message))
+    val jsonTweet = Enumeratee.map[Array[Byte]] {
+      message =>
+        val rawInput: String = new String(message)
+
+        // println("raw " + rawInput)
+
+        //I tried the scala way with pattern matching, but it returns the wrong type?
+        //everything blows up if we parse the delete like everything else.
+        if (rawInput.startsWith("{\"delete")) {
+          Logger.info("skipping delete status")
+          //everything blows up if we don't parse the delete like everything else.  This is quite a hack, just copied a tweet
+          val json = Json.parse(rawInput)
+          json
+        }
+        else {
+          val json = Json.parse(rawInput)
           parseAndSaveTweet(json, owner = "", saveTweetInDb = true)
           json
-      }
+        }
 
-      Ok.stream(rawTweet &> jsonTweet &> Comet(callback = "parent.newTweet"))
+    }
+    Ok.stream(rawTweet &> jsonTweet &> Comet(callback = "parent.newTweet"))
   }
 
 }

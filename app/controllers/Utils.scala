@@ -28,12 +28,9 @@ object Utils {
    * @tparam A
    * @return
    */
-  def readListOperation[A <: Closable](resource: A)(readOperation: A => Iterator[String]): ListBuffer[String] = {
+  def readListOperation[A <: Closable](resource: A)(readOperation: A => mutable.Buffer[String]): mutable.Buffer[String] = {
     try {
-      val data = readOperation(resource)
-      val buf = new ListBuffer[String]
-      data.foreach(buf += _)
-      buf
+      readOperation(resource)
     } finally {
       resource.close()
     }
@@ -55,12 +52,18 @@ object Utils {
     }
   }
 
-  def loadStopWords() = {
+  //todo - look at using this instead:
+  // On TraversableOnce has the method:
+  // def toBuffer[B >: A]: mutable.Buffer[B] = new ArrayBuffer[B] ++= seq
+  // ++=
 
+  def loadStopWords() = {
     val fileSource = Source.fromFile("data/stopwords.csv")
     readListOperation(fileSource) {
       file => {
-        file.getLines().flatMap(_.split(","))
+        var buf = file.getLines().toBuffer[String].flatMap(_.split(","))
+        println(buf)
+        buf
       }
     }
   }
