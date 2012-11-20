@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<script src="http://code.jquery.com/jquery-1.7.2.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+
+    $(function () {
+
+        $("#submitStatus").bind('click', function () {
+            saveStatus();
+        });
+
+    });
+
+    function saveStatus() {
+        var twitterkey = $("#twitterkey").val();
+        var twittersecret = $("#twittersecret").val();
+        var twittertoken = $("#twittertoken").val();
+        var twittertokensecret = $("#twittertokensecret").val();
+
+        var keysJson = JSON.stringify({twitterkey:twitterkey, twittersecret: twittersecret, twittertoken: twittertoken,twittertokensecret:twittertokensecret });
+        console.log("sending " + keysJson);
+
+        jqxhr = $.ajax({
+            url: "../createkeys",
+            data: keysJson,
+            contentType: "application/json",
+            type: "POST",
+            dataType: "json"
+        });
+
+        jqxhr.done(
+                function (data) {
+                    console.log("saved keys:" + data)
+                    $("#tweets").append("<h4>success: " + data + "</h4>")
+                });
+
+        //even thought the create tweet is working, it returns an error message
+        jqxhr.fail(
+                function (data, textStatus, errorThrown) {
+                    $("#tweets").append("<h4>error: " + data + "</h4>")
+                });
+    }
+
+</script>
+
+<body>
+<h1>Status Manager</h1>
+
+
+Twitter Consumer Key: <input type="text" id="twitterkey" value=""/><br/>
+Twitter Consumer Secret: <input type="text" id="twittersecret" value=""/><br/>
+Twitter Token: <input type="text" id="twittertoken" value=""/><br/>
+Twitter Token Secret: <input type="text" id="twittertokensecret" value=""/><br/>
+
+<input type="submit" id="submitStatus" value="Save"/>
+
+<div id="tweets">
+
+</div>
+
+
+</body>
+</html>

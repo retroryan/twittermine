@@ -83,6 +83,9 @@ function saveStatus() {
 function loadWordCounts() {
     $.post("../listWordCount", {},
         function (data) {
+
+            $("#loadingText").empty()
+
             data.forEach(function (wordCount) {
                 $("#wordCounts").append("<li><h4>" + wordCount.word + " =>  " + wordCount.count + "</h4></li>")
             })

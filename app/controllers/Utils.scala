@@ -17,7 +17,7 @@ object Utils {
 
 
   /**
-   * This excecutes a read file operation on an resource of type Closeable, ensuring at the end that the resource is closed.
+   * This executes a read file operation on an resource of type Closeable, ensuring at the end that the resource is closed.
    *
    * For some reason it seems this collection leaves some kind of pointer to a file descriptor in the collection
    * so we copy the strings out.  The error when trying to access the collection without this is:
@@ -52,17 +52,11 @@ object Utils {
     }
   }
 
-  //todo - look at using this instead:
-  // On TraversableOnce has the method:
-  // def toBuffer[B >: A]: mutable.Buffer[B] = new ArrayBuffer[B] ++= seq
-  // ++=
-
   def loadStopWords() = {
     val fileSource = Source.fromFile("data/stopwords.csv")
     readListOperation(fileSource) {
       file => {
         var buf = file.getLines().toBuffer[String].flatMap(_.split(","))
-        println(buf)
         buf
       }
     }

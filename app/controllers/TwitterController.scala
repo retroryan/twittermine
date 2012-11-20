@@ -105,6 +105,8 @@ object TwitterController extends Controller {
    */
   def processTimeline(timelineJson: JsValue): Unit = {
 
+    println(timelineJson)
+
     //  The following gets the text of the tweets, but text is also used
     //  at multiple levels, so this picks up garbage
     //  I need a way to get text from just one level down?
@@ -137,6 +139,8 @@ object TwitterController extends Controller {
    * @param saveTweetInDb
    */
   def parseAndSaveTweet(json: JsValue, owner: String, saveTweetInDb: Boolean): Unit = {
+
+    println("raw tweet " + json)
 
     val tweet = Tweet.createTweetFromTwitterJson(json, owner)
 
@@ -222,5 +226,28 @@ object TwitterController extends Controller {
     }
     Ok.stream(rawTweet &> jsonTweet &> Comet(callback = "parent.newTweet"))
   }
+
+  /**
+   * Create a new twitter key
+   * Semi-hack so we don't have to check the keys into git
+   * instead just upload from the keymanager
+   *
+   * @return
+   */
+  def createkeys = Action(parse.json) {
+    request =>
+      val rawjson = request.body
+      //no error checking, so be sure to enter values
+      //that replace all is the triple " with a single " inside to strip the "
+      //of strings
+      val twitterkey = (rawjson \\ "twitterkey").head.toString.replaceAll(""""""", "")
+      val twittersecret = (rawjson \\ "twittersecret").head.toString.replaceAll(""""""", "")
+      val twittertoken = (rawjson \\ "twittertoken").head.toString.replaceAll(""""""", "")
+      val twittertokensecret = (rawjson \\ "twittertokensecret").head.toString.replaceAll(""""""", "")
+      TwitterUtils.updateKeysAndTokens(twitterkey, twittersecret, twittertoken, twittertokensecret)
+
+      Ok(toJson("saved keys"))
+  }
+
 
 }

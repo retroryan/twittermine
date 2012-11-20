@@ -7,6 +7,7 @@ GET     /                           controllers.Assets.at(path="/public", file="
 POST    /listTweets                 controllers.TwitterController.listTweets
 POST    /listWordCount              controllers.TwitterController.listWordCount
 POST    /create                     controllers.TwitterController.create
+POST    /createkeys                 controllers.TwitterController.createkeys
 GET     /loadtimeline               controllers.TwitterController.loadtimeline
 GET     /tweets/:keywords           controllers.TwitterController.filteredTweets(keywords:String)
 GET     /randomtweets               controllers.TwitterController.randomtweets
