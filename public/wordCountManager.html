@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<script src="http://code.jquery.com/jquery-1.7.2.js" type="text/javascript"></script>
+
+<link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
+
+<script type="text/javascript">
+
+    $(function () {
+        loadWordCounts();
+    });
+
+
+    function loadWordCounts() {
+        $.post("../listWordCount", {},
+                function (data) {
+                    data.forEach(function (wordCount) {
+                        $("#wordCounts").append("<li>" + wordCount.word + " =>  " + wordCount.count + "</li>")
+                    })
+                }).error(function () {
+                    console.log("Error loading word counts");
+                });
+    }
+
+</script>
+
+<body>
+<h1>Word Count Manager</h1>
+
+<div class="header">
+    <div class="wrapper">
+        <div class="input-section">
+
+        </div>
+    </div>
+</div>
+
+<section>
+    <div class="results">
+        <ul id="wordCounts" class="tweets"></ul>
+    </div>
+</section>
+
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
+
+<script src="http://code.jquery.com/jquery-1.7.2.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+
+    $(function () {
+
+        $("#startStreamBtn").bind('click', function () {
+            startStream();
+        });
+
+    });
+
+
+    function startStream() {
+        var keywords = $("#keywordsInput").val();
+
+        var iframe = window.document.createElement("iframe");
+        iframe.src = "../tweets/" + keywords;
+        iframe.style.display = "none";
+        window.document.body.appendChild(iframe);
+    }
+
+    var newTweet = function (tweet) {
+
+        var tweetsListSize = $("#tweetList").children("li").length;
+        if (tweetsListSize > 10) {
+            $("#tweetList li:last").remove()
+        }
+        $("#tweetList").prepend("<li>" + tweet.text + " =>  " + tweet.user.name + "</li>")
+
+    }
+
+</script>
+
+<body>
+<h1>Status Manager</h1>
+
+
+<div class="header">
+    <div class="wrapper">
+        <div class="input-section">
+
+            Keywords to Track: <input type="text" id="keywordsInput" width="300px"
+                                      value="skyfall, halo, adele, playframework, scala, java, groovy,  germany, usa"/><br/>
+            <input type="submit" id="startStreamBtn" value="Start Stream"/>
+
+
+        </div>
+    </div>
+</div>
+
+<section>
+    <div class="results">
+        <ul id="tweetList" class="tweets"></ul>
+    </div>
+</section>
+
+
+</body>
+</html>
