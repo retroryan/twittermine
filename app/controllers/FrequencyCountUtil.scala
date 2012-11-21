@@ -21,7 +21,9 @@ object FrequencyCountUtil {
 
     //first group the like words in map, forcing everything to lower case
     //then create a map of the word counts by taking the length of the array words
-    val frequencyCountMap = line.split("[ !,.]+").groupBy(word => word.toLowerCase).mapValues(_.length)
+    val frequencyCountMap = line.split("[ !,.]+").groupBy{
+        word => word.replaceAll("#","").toLowerCase
+      }.mapValues(_.length)
 
     //add or update word counts in the database
     //exclude single letter words and stop words.

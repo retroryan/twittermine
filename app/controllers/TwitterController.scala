@@ -68,7 +68,11 @@ object TwitterController extends Controller {
     implicit request =>
 
     //todo the minimum count should be a parameter passed in from the client
-      val wordCountList = WordCount.findAll().filter(_.getCount > 1).sortWith(_.getCount > _.getCount)
+
+      //word count is getting slower as the db grows, so changing to search by items greater than 2
+      // val wordCountList = WordCount.findAll().filter(_.getCount > 1).sortWith(_.getCount > _.getCount)
+
+      val wordCountList = WordCount.findByCount(2).sortWith(_.getCount > _.getCount)
 
       // this uses the implicit converter in Tweet
       Ok(toJson(wordCountList))
@@ -207,7 +211,7 @@ object TwitterController extends Controller {
       message =>
         val rawInput: String = new String(message)
 
-        // println("raw " + rawInput)
+        println("raw " + rawInput)
 
         //I tried the scala way with pattern matching, but it returns the wrong type?
         //everything blows up if we parse the delete like everything else.
@@ -240,10 +244,10 @@ object TwitterController extends Controller {
       //no error checking, so be sure to enter values
       //that replace all is the triple " with a single " inside to strip the "
       //of strings
-      val twitterkey = (rawjson \\ "twitterkey").head.toString.replaceAll(""""""", "")
-      val twittersecret = (rawjson \\ "twittersecret").head.toString.replaceAll(""""""", "")
-      val twittertoken = (rawjson \\ "twittertoken").head.toString.replaceAll(""""""", "")
-      val twittertokensecret = (rawjson \\ "twittertokensecret").head.toString.replaceAll(""""""", "")
+      val twitterkey = (rawjson \\ "twitterkey").head.toString.replaceAll( """"""", "")
+      val twittersecret = (rawjson \\ "twittersecret").head.toString.replaceAll( """"""", "")
+      val twittertoken = (rawjson \\ "twittertoken").head.toString.replaceAll( """"""", "")
+      val twittertokensecret = (rawjson \\ "twittertokensecret").head.toString.replaceAll( """"""", "")
       TwitterUtils.updateKeysAndTokens(twitterkey, twittersecret, twittertoken, twittertokensecret)
 
       Ok(toJson("saved keys"))

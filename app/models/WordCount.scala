@@ -12,24 +12,25 @@ import scala.collection.JavaConversions._
 import play.api.Play.current
 
 class WordCount(@ObjectId @Id val id: String,
-                     @BeanProperty @JsonProperty("word") word: String,
-                     @BeanProperty @JsonProperty("count") count: Int) {
+                @BeanProperty @JsonProperty("word") word: String,
+                @BeanProperty @JsonProperty("count") count: Int) {
   @ObjectId
   @Id
   def getId = id
 
   def getCount = count
+
   def getWord = word
 }
 
 object WordCount {
   private lazy val db = MongoDB.collection("wordCount", classOf[WordCount], classOf[String])
 
-  def create(wordCount: WordCount):Unit = {
+  def create(wordCount: WordCount): Unit = {
     db.save(wordCount)
   }
 
-  def update(wordCount: WordCount):Unit = {
+  def update(wordCount: WordCount): Unit = {
     db.updateById(wordCount.id, wordCount)
   }
 
@@ -41,6 +42,17 @@ object WordCount {
     val builder = immutable.List.newBuilder[WordCount]
     for (x <- array)
       builder += x
+
+    builder.result
+  }
+
+  def findByCount(count: Int) = {
+    val dbCursor = db.find().greaterThanEquals("count", count)
+
+    val builder = immutable.List.newBuilder[WordCount]
+    while (dbCursor.hasNext) {
+      builder += dbCursor.next()
+    }
 
     builder.result
   }
